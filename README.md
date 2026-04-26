@@ -70,7 +70,7 @@ This implements the microservices architecture from our design document:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR-USERNAME/taxsaas-ghana.git
+git clone https://github.com/ernestdark11/taxsaas-ghana.git
 
 # Open in browser
 open index.html
