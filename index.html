@@ -59,13 +59,10 @@
             font-weight: 500;
             transition: color 0.3s;
             cursor: pointer;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
         }
 
         .nav-link:hover, .nav-link.active {
             color: #f5576c;
-            background: rgba(245, 87, 108, 0.1);
         }
 
         .btn-logout {
@@ -118,6 +115,28 @@
             color: #999;
             font-size: 0.8rem;
             margin-top: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
         }
 
         .form-section {
@@ -210,6 +229,17 @@
             color: #155724;
         }
 
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
         .auth-modal {
             display: none;
             position: fixed;
@@ -267,9 +297,6 @@
             }
             .nav-container {
                 flex-direction: column;
-            }
-            .nav-links {
-                justify-content: center;
             }
         }
     </style>
@@ -333,19 +360,18 @@
             <div class="nav-container">
                 <div class="logo">🇬🇭 TaxSaaS Ghana</div>
                 <div class="nav-links">
-                    <a class="nav-link active" onclick="switchSection('dashboard', this)">Dashboard</a>
-                    <a class="nav-link" onclick="switchSection('tax-calculation', this)">Tax Calculator</a>
-                    <a class="nav-link" onclick="switchSection('filing', this)">File Returns</a>
-                    <a class="nav-link" onclick="switchSection('payments', this)">Payments</a>
-                    <a class="nav-link" onclick="switchSection('reports', this)">Reports</a>
+                    <a class="nav-link active" onclick="switchSection('dashboard')">Dashboard</a>
+                    <a class="nav-link" onclick="switchSection('tax-calculation')">Tax Calculator</a>
+                    <a class="nav-link" onclick="switchSection('filing')">File Returns</a>
+                    <a class="nav-link" onclick="switchSection('payments')">Payments</a>
+                    <a class="nav-link" onclick="switchSection('reports')">Reports</a>
                     <button class="btn-logout" onclick="logout()">Logout</button>
                 </div>
             </div>
         </nav>
 
         <div class="container">
-            <!-- Dashboard Section -->
-            <div id="dashboardSection" class="section-content">
+            <div id="dashboardSection">
                 <div class="dashboard-grid">
                     <div class="card">
                         <h3>Total Tax Liability</h3>
@@ -368,14 +394,9 @@
                         <div class="subtitle">Personal Income Tax</div>
                     </div>
                 </div>
-                <div class="form-section">
-                    <h3>Welcome to TaxSaaS Ghana</h3>
-                    <p>Select an option from the menu above to get started.</p>
-                </div>
             </div>
 
-            <!-- Tax Calculator Section -->
-            <div id="tax-calculationSection" class="section-content" style="display:none">
+            <div id="taxCalculationSection" style="display:none">
                 <div class="form-section">
                     <h2>🇬🇭 Ghana Tax Calculator</h2>
                     <p style="margin-bottom: 1rem; color: #666;">Calculate your taxes based on GRA 2024 rates</p>
@@ -399,7 +420,7 @@
                             </select>
                         </div>
                     </div>
-                    <button onclick="calculateTax()">Calculate Tax</button>
+                    <button onclick="calculateTax()" style="margin-top: 1rem;">Calculate Tax</button>
                     
                     <div id="taxResults" style="margin-top: 2rem; display:none">
                         <h3>Tax Breakdown for ₵<span id="displayIncome">0</span></h3>
@@ -425,12 +446,14 @@
                                 <div class="subtitle" style="color: rgba(255,255,255,0.9);">Annual tax liability</div>
                             </div>
                         </div>
+                        <div class="tax-result-box">
+                            <strong>💡 Tax Tip:</strong> Consider contributing to a registered retirement savings plan to reduce your taxable income.
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Filing Section -->
-            <div id="filingSection" class="section-content" style="display:none">
+            <div id="filingSection" style="display:none">
                 <div class="form-section">
                     <h2>File Tax Return</h2>
                     <form id="filingForm">
@@ -463,8 +486,7 @@
                 </div>
             </div>
 
-            <!-- Payments Section -->
-            <div id="paymentsSection" class="section-content" style="display:none">
+            <div id="paymentsSection" style="display:none">
                 <div class="form-section">
                     <h2>Make Tax Payment</h2>
                     <p>Integrated with Ghana.gov Payment Gateway</p>
@@ -488,8 +510,7 @@
                 </div>
             </div>
 
-            <!-- Reports Section -->
-            <div id="reportsSection" class="section-content" style="display:none">
+            <div id="reportsSection" style="display:none">
                 <div class="form-section">
                     <h2>Tax Reports & Analytics</h2>
                     <button onclick="generateReport()">Generate Sample Report</button>
@@ -533,13 +554,17 @@
 
         function calculatePersonalTax(income) {
             let tax = 0;
+            let remainingIncome = income;
             
             for (let bracket of TAX_BRACKETS) {
-                if (income > bracket.min) {
-                    const taxableInBracket = Math.min(income, bracket.max) - bracket.min;
-                    if (taxableInBracket > 0) {
-                        tax += taxableInBracket * bracket.rate;
-                    }
+                if (remainingIncome <= 0) break;
+                
+                let bracketRange = bracket.max - bracket.min + 1;
+                let taxableInBracket = Math.min(remainingIncome, bracketRange);
+                
+                if (taxableInBracket > 0) {
+                    tax += taxableInBracket * bracket.rate;
+                    remainingIncome -= taxableInBracket;
                 }
             }
             
@@ -576,31 +601,6 @@
             document.getElementById('taxResults').style.display = 'block';
         }
 
-        // FIXED: The switchSection function now works correctly
-        function switchSection(section, element) {
-            // Hide all sections
-            const sections = document.querySelectorAll('.section-content');
-            sections.forEach(s => {
-                s.style.display = 'none';
-            });
-            
-            // Show the selected section
-            const activeSection = document.getElementById(`${section}Section`);
-            if (activeSection) {
-                activeSection.style.display = 'block';
-            }
-            
-            // Update active nav link
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            if (element) {
-                element.classList.add('active');
-            }
-        }
-
         function showAuthForm(formType) {
             const loginForm = document.getElementById('loginForm');
             const registerForm = document.getElementById('registerForm');
@@ -633,8 +633,6 @@
                 document.getElementById('authModal').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 updateDashboard();
-                // Show dashboard by default
-                switchSection('dashboard', document.querySelector('.nav-link'));
             } else {
                 alert('Invalid TIN or Password. Use Demo: P-123456789-0 / password123');
             }
@@ -667,7 +665,14 @@
             localStorage.removeItem('currentUser');
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('authModal').style.display = 'flex';
-            document.getElementById('loginForm').reset();
+        }
+
+        function switchSection(section) {
+            document.querySelectorAll('.container > div').forEach(div => div.style.display = 'none');
+            document.getElementById(`${section}Section`).style.display = 'block';
+            
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
         }
 
         function updateDashboard() {
@@ -687,15 +692,14 @@
             document.getElementById('reportOutput').innerHTML = `
                 <div class="form-section">
                     <h3>Tax Summary Report</h3>
-                    <p><strong>Total Filings:</strong> ${filings.length}</p>
-                    <p><strong>Total Payments:</strong> ${payments.length}</p>
-                    <p><strong>Report Generated:</strong> ${new Date().toLocaleString()}</p>
-                    <button onclick="alert('PDF download feature coming soon!')">Download PDF Report</button>
+                    <p>Total Filings: ${filings.length}</p>
+                    <p>Total Payments: ${payments.length}</p>
+                    <p>Report Generated: ${new Date().toLocaleString()}</p>
+                    <button onclick="alert('Download feature coming soon!')">Download PDF Report</button>
                 </div>
             `;
         }
 
-        // Form submissions
         document.getElementById('filingForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const filing = {
@@ -728,19 +732,17 @@
             };
             payments.push(payment);
             localStorage.setItem('tax_payments', JSON.stringify(payments));
-            alert(`Payment of ₵${payment.amount.toFixed(2)} processed via Ghana.gov\nReference: ${payment.reference}`);
+            alert(`Payment of ₵${payment.amount.toFixed(2)} processed via Ghana.gov`);
             updateDashboard();
             e.target.reset();
         });
 
-        // Check for saved session
         const savedUser = localStorage.getItem('currentUser');
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
             document.getElementById('authModal').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
             updateDashboard();
-            switchSection('dashboard', document.querySelector('.nav-link'));
         }
     </script>
 </body>
